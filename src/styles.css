@@ -1,0 +1,123 @@
+@import 'tailwindcss';
+@config '../tailwind.config.js';
+
+/*
+ * @pulse8-ai/chat - Pre-compiled Tailwind CSS
+ * 
+ * This file contains all the Tailwind utility classes used by the chat components.
+ * Import this in your application: import '@pulse8-ai/chat/styles.css'
+ */
+
+/* Custom animations used by chat components */
+@keyframes bounce-typing {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-bounce-typing {
+  animation: bounce-typing 1.4s ease-in-out infinite;
+}
+
+.animate-bounce-typing-delay-1 {
+  animation: bounce-typing 1.4s ease-in-out 0.2s infinite;
+}
+
+.animate-bounce-typing-delay-2 {
+  animation: bounce-typing 1.4s ease-in-out 0.4s infinite;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+/* Custom scrollbar styles */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #DEE5F0;
+  border-radius: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #cddaef;
+}
+
+/* Prose styles for markdown content */
+.prose {
+  color: white;
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+  color: white;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.prose p {
+  margin: 1rem 0;
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 1.5rem;
+  margin: 1rem 0;
+}
+
+.prose li {
+  margin-bottom: 0.5rem;
+}
+
+.prose a {
+  color: #186ADE;
+}
+
+.prose a:hover {
+  color: #1258B8;
+}
+
+.prose blockquote {
+  border-left: 4px solid #9333ea;
+  padding-left: 1rem;
+  font-style: italic;
+  color: #9ca3af;
+}
+
+.prose pre {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid #2a2a35;
+  padding: 1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.prose code {
+  font-size: 0.875rem;
+  font-family: monospace;
+}
+
