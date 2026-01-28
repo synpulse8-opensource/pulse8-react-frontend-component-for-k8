@@ -18,6 +18,8 @@ export interface ISendMessageParams {
     pdfUuids?: string[]
     /** The AI model to use for this request */
     modelName: string
+    /** The current conversation history (messages before this request) */
+    messages: IMessage[]
     /** Callback to handle each streaming event */
     onEvent: (event: IStreamEvent) => void
     /** Callback called when streaming completes successfully */
@@ -193,6 +195,9 @@ export const useChatMessages = (options: IUseChatMessagesOptions) => {
         async (userInput: string, modelName: string) => {
             if (!userInput.trim()) return
 
+            // Capture conversation history before this exchange
+            const conversationHistory = [...messages]
+
             // Add user message
             const userMessage: IMessage = {
                 id: generateId(),
@@ -231,6 +236,7 @@ export const useChatMessages = (options: IUseChatMessagesOptions) => {
                     userInput,
                     pdfUuids: pdfUuids.length > 0 ? pdfUuids : undefined,
                     modelName,
+                    messages: conversationHistory,
                     onEvent: handleStreamEvent,
                     onComplete: () => {
                         // On complete, finalize any remaining text segment
@@ -278,7 +284,7 @@ export const useChatMessages = (options: IUseChatMessagesOptions) => {
                 abortControllerRef.current = null
             }
         },
-        [uploadedPdfs, sendMessageToApi, handleStreamEvent, generateId],
+        [messages, uploadedPdfs, sendMessageToApi, handleStreamEvent, generateId, trimMessages],
     )
 
     // Handle stopping streaming
