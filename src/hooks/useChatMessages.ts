@@ -333,6 +333,66 @@ export const useChatMessages = (options: IUseChatMessagesOptions) => {
         currentTextSegmentRef.current = ''
     }, [])
 
+    /**
+     * Append a complete message to the chat history.
+     * Useful for adding messages without using StreamSSE.
+     *
+     * @example
+     * ```tsx
+     * // Add a message from your own API response
+     * const response = await fetch('/my-api', { body: { question } })
+     * const data = await response.json()
+     * appendMessage({ role: 'assistant', content: data.answer })
+     * ```
+     */
+    const appendMessage = useCallback(
+        (
+            message: Omit<IMessage, 'id' | 'timestamp'> & {
+                id?: string
+                timestamp?: Date
+            },
+        ) => {
+            const fullMessage: IMessage = {
+                id: message.id ?? generateId(),
+                timestamp: message.timestamp ?? new Date(),
+                ...message,
+            }
+            setMessages((prev) => trimMessages([...prev, fullMessage]))
+        },
+        [generateId, trimMessages],
+    )
+
+    /**
+     * Convenience method to append a user message with just content.
+     *
+     * @example
+     * ```tsx
+     * appendUserMessage('What is the weather today?')
+     * ```
+     */
+    const appendUserMessage = useCallback(
+        (content: string, attachedFiles?: IPdfFile[]) => {
+            appendMessage({ role: 'user', content, attachedFiles })
+        },
+        [appendMessage],
+    )
+
+    /**
+     * Convenience method to append an assistant message with just content.
+     *
+     * @example
+     * ```tsx
+     * const response = await myApi.chat(question)
+     * appendAssistantMessage(response.answer)
+     * ```
+     */
+    const appendAssistantMessage = useCallback(
+        (content: string) => {
+            appendMessage({ role: 'assistant', content })
+        },
+        [appendMessage],
+    )
+
     return {
         messages,
         isStreaming,
@@ -342,5 +402,8 @@ export const useChatMessages = (options: IUseChatMessagesOptions) => {
         addPdf,
         removePdf,
         clearChat,
+        appendMessage,
+        appendUserMessage,
+        appendAssistantMessage,
     }
 }

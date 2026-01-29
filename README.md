@@ -78,6 +78,29 @@ function ChatPage() {
 }
 ```
 
+### Simple Message Appending (Without Streaming)
+
+For simpler use cases where you don't need streaming, use the `appendMessage` functions:
+
+```tsx
+const { appendUserMessage, appendAssistantMessage } = useChatMessages({
+  sendMessageToApi: async () => {}, // Required but not used
+})
+
+// Add messages from your own API response
+const handleSend = async (question: string) => {
+  appendUserMessage(question)
+  
+  const response = await fetch('/my-api', {
+    method: 'POST',
+    body: JSON.stringify({ question }),
+  })
+  const data = await response.json()
+  
+  appendAssistantMessage(data.answer)
+}
+```
+
 ### With Anthropic Claude
 
 ```tsx
@@ -135,11 +158,9 @@ The library ships with adapters for major AI providers:
 
 | Provider | Full Adapter | Text-Only Adapter | Tool Support |
 |----------|--------------|-------------------|--------------|
-| OpenAI | `createOpenAIAdapter()` | `openAITextAdapter` | ✅ Function Calling |
-| Anthropic | `createAnthropicAdapter()` | `anthropicTextAdapter` | ✅ Tool Use |
-| Google Gemini | `createGeminiAdapter()` | `geminiTextAdapter` | ✅ Function Calling |
-
-### Import Paths
+| OpenAI | `createOpenAIAdapter()` | `openAITextAdapter` | Function Calling |
+| Anthropic | `createAnthropicAdapter()` | `anthropicTextAdapter` | Tool Use |
+| Google Gemini | `createGeminiAdapter()` | `geminiTextAdapter` | Function Calling |
 
 ```tsx
 // From main package
@@ -148,18 +169,6 @@ import { createOpenAIAdapter, streamSSE } from '@pulse8-ai/chat'
 // Or from subpaths (tree-shakeable)
 import { createOpenAIAdapter } from '@pulse8-ai/chat/adapters'
 import { streamSSE } from '@pulse8-ai/chat/utils'
-```
-
-### Adapter Types
-
-```typescript
-// Full adapters - create stateful instances for tool tracking
-const openaiAdapter = createOpenAIAdapter()
-const anthropicAdapter = createAnthropicAdapter()
-const geminiAdapter = createGeminiAdapter()
-
-// Text-only adapters - stateless, simpler
-import { openAITextAdapter, anthropicTextAdapter, geminiTextAdapter } from '@pulse8-ai/chat'
 ```
 
 ## Streaming Utilities
@@ -192,7 +201,6 @@ import { parseSSELine, createSSEParser } from '@pulse8-ai/chat'
 
 // Parse a single SSE line
 const data = parseSSELine('data: {"content": "hello"}')
-// → { content: "hello" }
 
 // Create a stateful parser for chunked data
 const parser = createSSEParser({
@@ -202,83 +210,8 @@ const parser = createSSEParser({
   },
 })
 
-// Feed chunks as they arrive
 parser.feed(chunk1)
 parser.feed(chunk2)
-```
-
-## Custom Event Adapters
-
-If your backend uses a different format, create a custom adapter:
-
-```tsx
-import type { IStreamEvent, EventAdapter } from '@pulse8-ai/chat'
-
-// Your backend's event format
-interface MyBackendEvent {
-  eventType: 'TEXT' | 'TOOL_CALL' | 'TOOL_RESULT' | 'ERROR'
-  text?: string
-  toolName?: string
-  toolResult?: unknown
-  error?: string
-}
-
-// Adapter to transform to standard format
-const myEventAdapter: EventAdapter = (raw: unknown): IStreamEvent | null => {
-  const event = raw as MyBackendEvent
-  
-  switch (event.eventType) {
-    case 'TEXT':
-      return { type: 'llm_token', content: event.text }
-    case 'TOOL_CALL':
-      return { type: 'tool_start', tool_name: event.toolName }
-    case 'TOOL_RESULT':
-      return { 
-        type: 'tool_end', 
-        tool_name: event.toolName,
-        output: JSON.stringify(event.toolResult)
-      }
-    case 'ERROR':
-      return { type: 'error', message: event.error }
-    default:
-      return null
-  }
-}
-
-// Use with streamSSE
-await streamSSE({
-  url: '/api/chat',
-  adapter: myEventAdapter,
-  // ...
-})
-```
-
-## Standard Event Format
-
-The library uses this internal event format:
-
-```typescript
-interface IStreamEvent {
-  type: 'llm_token' | 'tool_content' | 'tool_start' | 'tool_end' | 'error'
-  content?: string      // For llm_token/tool_content
-  tool_name?: string    // For tool_start/tool_end
-  output?: string       // For tool_end (JSON string)
-  message?: string      // For error
-  title?: string        // Optional title for tools
-  input?: string        // Optional input for tool_start
-}
-```
-
-**SSE Response Example:**
-
-```
-data: {"type":"llm_token","content":"Hello"}
-
-data: {"type":"tool_start","tool_name":"search","title":"Searching..."}
-
-data: {"type":"tool_end","tool_name":"search","output":"{\"results\":[...]}"}
-
-data: {"type":"llm_token","content":"Here are the results:"}
 ```
 
 ## Configuration
@@ -292,22 +225,15 @@ import { ChatConfigProvider, ChatPanel } from '@pulse8-ai/chat'
 import type { IChatConfig } from '@pulse8-ai/chat'
 
 const chatConfig: IChatConfig = {
-  // Register custom tool renderers
   toolRenderers: {
     'generate_chart': MyChartRenderer,
     'search_results': MySearchRenderer,
   },
-  
-  // Map tool names to friendly display names
   toolNameMapping: {
     'generate_chart': 'Chart',
     'search_results': 'Web Search',
   },
-  
-  // Tools to render inline in messages
   inlineTools: ['generate_chart'],
-  
-  // Tools to hide from the UI
   hiddenTools: ['internal_lookup'],
 }
 
@@ -319,79 +245,6 @@ function App() {
   )
 }
 ```
-
-## Custom Tool Renderers
-
-Create custom components to render tool outputs:
-
-```tsx
-import type { IToolRendererComponentProps } from '@pulse8-ai/chat'
-
-const MyChartRenderer: React.FC<IToolRendererComponentProps> = ({ 
-  output, 
-  title, 
-  theme 
-}) => {
-  // Parse the tool output
-  const data = JSON.parse(output)
-  
-  // Render using your preferred chart library
-  return (
-    <div className="my-chart">
-      {title && <h3>{title}</h3>}
-      <MyChartLibrary data={data} />
-    </div>
-  )
-}
-```
-
-Register the renderer via `ChatConfigProvider`:
-
-```tsx
-const config: IChatConfig = {
-  toolRenderers: {
-    'generate_chart': MyChartRenderer,
-  },
-  inlineTools: ['generate_chart'], // Show inline in message
-}
-```
-
-## Theming
-
-Customize the visual appearance with partial theme overrides:
-
-```tsx
-import type { ChatTheme } from '@pulse8-ai/chat'
-
-const customTheme: Partial<ChatTheme> = {
-  colors: {
-    primary: '#6366f1',
-    background: '#1a1a2e',
-    text: '#ffffff',
-    userMessageGradientFrom: '#8b5cf6',
-    userMessageGradientVia: '#6366f1',
-    userMessageGradientTo: '#3b82f6',
-    assistantMessageBg: '#2d2d44',
-    assistantMessageText: '#ffffff',
-    // Chart colors for custom chart implementations
-    chartColors: ['#6366f1', '#8b5cf6', '#a855f7', '#c084fc'],
-  },
-}
-
-<ChatPanel theme={customTheme} {...props} />
-```
-
-### Available Theme Properties
-
-- **Primary colors**: `primary`, `primaryHover`, `primaryLight`
-- **Backgrounds**: `background`, `backgroundSecondary`, `backgroundTertiary`
-- **Text**: `text`, `textSecondary`, `textTertiary`, `textMuted`
-- **Messages**: `userMessageBg`, `userMessageGradient*`, `assistantMessageBg`
-- **Buttons**: `buttonPrimary`, `buttonPrimaryHover`, `buttonSecondary`
-- **Inputs**: `inputBg`, `inputBorder`, `inputFocusBorder`
-- **Charts**: `chartColors[]`, `chartGridLine`, `chartAxis`
-- **Status**: `success`, `error`, `warning`, `info`
-- **UI Elements**: `codeBlockBg`, `tableHeaderBg`, `toolContainerBg`
 
 ## Components
 
@@ -438,19 +291,21 @@ Manages chat state and streaming:
 
 ```tsx
 const {
-  messages,       // IMessage[]
-  isStreaming,    // boolean
-  uploadedPdfs,   // IPdfFile[]
-  sendMessage,    // (message: string, model: string) => Promise<void>
-  stopStreaming,  // () => void
-  addPdf,         // (pdf: IPdfFile) => void
-  removePdf,      // (uuid: string) => void
-  clearChat,      // () => void
+  messages,            // IMessage[]
+  isStreaming,         // boolean
+  uploadedPdfs,        // IPdfFile[]
+  sendMessage,         // (message: string, model: string) => Promise<void>
+  stopStreaming,       // () => void
+  addPdf,              // (pdf: IPdfFile) => void
+  removePdf,           // (uuid: string) => void
+  clearChat,           // () => void
+  appendMessage,       // (message: Partial<IMessage>) => void
+  appendUserMessage,   // (content: string, attachedFiles?: IPdfFile[]) => void
+  appendAssistantMessage, // (content: string) => void
 } = useChatMessages({
   sendMessageToApi: async (params) => { ... },
   generateId: () => uuid(),  // Optional custom ID generator
-  toolNameMapping: { ... },  // Optional, overrides config
-  inlineTools: [...],        // Optional, overrides config
+  maxMessages: 100,          // Optional message limit
 })
 ```
 
@@ -494,17 +349,6 @@ interface IPdfFile {
   name: string
 }
 
-// For custom chart implementations
-interface IChartData {
-  type: 'line' | 'bar' | 'pie' | string
-  title?: string
-  data?: Array<{ label: string; value: number }>
-  xAxis?: { label?: string; data?: string[] }
-  yAxis?: { label?: string }
-  series?: Array<{ name?: string; data: number[] }>
-}
-
-// Event adapter function signature
 type EventAdapter = (rawEvent: unknown) => IStreamEvent | null
 ```
 
@@ -518,56 +362,32 @@ import { Button, Input, Select, Textarea } from '@pulse8-ai/chat'
 import { Button } from '@pulse8-ai/chat/ui'
 ```
 
-## Migration from v0.1.x
+## Error Handling
 
-### Breaking Changes in v0.2.0
-
-1. **Removed Built-in Chart/Table Components**
-   - Chart and Table components removed from core package
-   - Register your own via `ChatConfigProvider.toolRenderers`
-
-2. **Tool Renderers Must Be Registered**
-   - No built-in renderers for specific tools
-   - Use `ChatConfigProvider` to register custom renderers
-
-3. **K8Icon Deprecated**
-   - Use `AssistantIcon` or provide custom via `config.icons`
-
-### New in v0.2.0
-
-1. **Pre-built Adapters** - `createOpenAIAdapter()`, `createAnthropicAdapter()`, `createGeminiAdapter()`
-2. **Streaming Utilities** - `streamSSE()`, `parseSSELine()`, `createSSEParser()`
-3. **Simplified Integration** - Much less boilerplate for common backends
-
-### Migration Steps
+The package includes error boundaries to prevent crashes:
 
 ```tsx
-// Before (v0.1.x) - lots of boilerplate
-const { messages, sendMessage } = useChatMessages({
-  sendMessageToApi: async (params) => {
-    const response = await fetch('/api/chat', { ... })
-    const reader = response.body.getReader()
-    // ... 30+ lines of SSE parsing code
-  },
-})
+import { ErrorBoundary, MessageErrorBoundary } from '@pulse8-ai/chat'
 
-// After (v0.2.0) - use pre-built utilities
-import { streamSSE, createOpenAIAdapter } from '@pulse8-ai/chat'
-
-const { messages, sendMessage } = useChatMessages({
-  sendMessageToApi: async (params) => {
-    await streamSSE({
-      url: '/api/chat',
-      body: { message: params.userInput },
-      adapter: createOpenAIAdapter(),
-      onEvent: params.onEvent,
-      onComplete: params.onComplete,
-      onError: params.onError,
-      signal: params.abortSignal,
-    })
-  },
-})
+<ErrorBoundary
+  fallback={<div>Chat is temporarily unavailable</div>}
+  onError={(error) => logToService(error)}
+>
+  <ChatPanel {...props} />
+</ErrorBoundary>
 ```
+
+## Documentation
+
+For detailed guides, see:
+
+- [Custom Adapters](docs/ADAPTERS.md) - Create adapters for custom backends
+- [Theming](docs/THEMING.md) - Customize colors and appearance
+- [Custom Tool Renderers](docs/TOOL_RENDERERS.md) - Build chart, table, and other renderers
+- [Migration Guide](docs/MIGRATION.md) - Upgrade from v0.1.x to v0.2.0
+- [Security](docs/SECURITY.md) - Security best practices
+- [Accessibility](docs/ACCESSIBILITY.md) - Accessibility features and testing
+- [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues and solutions
 
 ## Development
 
@@ -587,236 +407,6 @@ npm run lint
 # Run Storybook
 npm run storybook
 ```
-
-## Security
-
-This package includes several security measures to protect against common vulnerabilities:
-
-### XSS Prevention
-
-- **URL Sanitization**: All URLs in markdown links are sanitized. Only `http:`, `https:`, `mailto:`, and `tel:` protocols are allowed. Potentially dangerous protocols like `javascript:` and `data:` are blocked.
-- **Markdown Rendering**: Uses `react-markdown` which provides safe HTML rendering by default. The content is not passed through `dangerouslySetInnerHTML`.
-- **External Links**: All external links include `rel="noopener noreferrer nofollow"` attributes.
-
-### JSON Parsing Protection
-
-The streaming utilities include protection against malicious payloads:
-
-```tsx
-import { safeJsonParse, DEFAULT_MAX_JSON_SIZE, DEFAULT_MAX_JSON_DEPTH } from '@pulse8-ai/chat'
-
-// Parse with default limits (1MB size, 100 levels depth)
-const data = safeJsonParse(jsonString)
-
-// Or with custom limits
-const data = safeJsonParse(jsonString, 512 * 1024, 50) // 512KB, 50 levels
-```
-
-### File Upload Security
-
-When implementing file uploads:
-
-1. **Validate file types** on both client and server
-2. **Set size limits** appropriate for your use case
-3. **Scan uploaded files** for malware on the server
-4. **Store files securely** with proper access controls
-
-```tsx
-// Example: Client-side validation
-const handleUpload = async (file: File) => {
-  // Check file type
-  if (file.type !== 'application/pdf') {
-    throw new Error('Only PDF files are allowed')
-  }
-
-  // Check file size (e.g., 10MB limit)
-  if (file.size > 10 * 1024 * 1024) {
-    throw new Error('File size must be less than 10MB')
-  }
-
-  // Proceed with upload
-  return await uploadToServer(file)
-}
-```
-
-### Content Security Policy (CSP)
-
-For production deployments, we recommend implementing a strict CSP:
-
-```html
-<meta http-equiv="Content-Security-Policy"
-  content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';">
-```
-
-### Reporting Security Issues
-
-If you discover a security vulnerability, please email security@pulse8.ai instead of opening a public issue.
-
-## Accessibility
-
-This package is designed with accessibility in mind, following WCAG 2.1 guidelines.
-
-### Features
-
-- **ARIA Labels**: All interactive elements have proper ARIA labels
-- **Keyboard Navigation**: Full keyboard support for all interactions
-- **Screen Reader Support**: Semantic HTML and ARIA live regions for dynamic content
-- **Focus Management**: Proper focus indicators and focus trapping in modals
-
-### Component Accessibility
-
-| Component | Features |
-|-----------|----------|
-| `ChatContainer` | `role="log"`, `aria-live="polite"`, keyboard scrollable |
-| `ChatInput` | Labeled input, button descriptions, menu accessibility |
-| `Message` | `role="listitem"`, `aria-busy` for streaming |
-| `ErrorBoundary` | `role="alert"`, `aria-live="assertive"` |
-
-### Usage Tips
-
-```tsx
-// The chat container supports keyboard navigation
-<ChatPanel
-  messages={messages}
-  // ... other props
-/>
-
-// Screen readers will announce new messages automatically
-// due to aria-live="polite" on the message container
-```
-
-### Testing Accessibility
-
-We recommend testing with:
-- **VoiceOver** (macOS)
-- **NVDA** (Windows)
-- **axe DevTools** browser extension
-- **Lighthouse** accessibility audit
-
-## Error Handling
-
-### Error Boundaries
-
-The package includes error boundaries to prevent crashes:
-
-```tsx
-import { ErrorBoundary, MessageErrorBoundary } from '@pulse8-ai/chat'
-
-// Wrap your entire chat for global error handling
-<ErrorBoundary
-  fallback={<div>Chat is temporarily unavailable</div>}
-  onError={(error) => logToService(error)}
->
-  <ChatPanel {...props} />
-</ErrorBoundary>
-
-// MessageErrorBoundary is automatically used in MessageContentRenderer
-// to handle individual message rendering errors gracefully
-```
-
-### Custom Error Handling
-
-```tsx
-<ErrorBoundary
-  renderError={(error, resetError) => (
-    <div>
-      <p>Error: {error.message}</p>
-      <button onClick={resetError}>Try Again</button>
-    </div>
-  )}
->
-  <ChatPanel {...props} />
-</ErrorBoundary>
-```
-
-## Troubleshooting
-
-### Common Issues
-
-#### Styles not loading
-
-Make sure you import the CSS file:
-
-```tsx
-import '@pulse8-ai/chat/styles.css'
-```
-
-#### TypeScript errors with theme
-
-Provide a `Partial<ChatTheme>` type:
-
-```tsx
-import type { ChatTheme } from '@pulse8-ai/chat'
-
-const theme: Partial<ChatTheme> = {
-  colors: {
-    primary: '#6366f1',
-  },
-}
-```
-
-#### Streaming not working
-
-1. Verify your API returns Server-Sent Events (SSE)
-2. Check that CORS headers allow streaming
-3. Ensure the `Content-Type` is `text/event-stream`
-4. Verify the adapter matches your backend format
-
-```tsx
-// Debug streaming issues
-await streamSSE({
-  url: '/api/chat',
-  adapter: (raw) => {
-    console.log('Raw event:', raw)  // Debug: log raw events
-    return myAdapter(raw)
-  },
-  onEvent: (event) => console.log('Parsed event:', event),
-  // ...
-})
-```
-
-#### Messages not updating
-
-Ensure you're passing the correct state and callbacks:
-
-```tsx
-const { messages, isStreaming, sendMessage } = useChatMessages({
-  sendMessageToApi: async (params) => {
-    // Make sure to call ALL callbacks
-    params.onEvent(...)    // For each event
-    params.onComplete()    // When done
-    params.onError(...)    // On error
-  },
-})
-```
-
-#### PDF upload not working
-
-1. Check that `onUploadPdf` is provided
-2. Verify your upload endpoint accepts the file
-3. Ensure the function returns the file UUID
-
-```tsx
-const handleUpload = async (file: File, onProgress: (n: number) => void) => {
-  const formData = new FormData()
-  formData.append('file', file)
-
-  const response = await fetch('/api/upload', {
-    method: 'POST',
-    body: formData,
-  })
-
-  const { uuid } = await response.json()
-  onProgress(100)
-  return uuid  // Must return UUID
-}
-```
-
-### Getting Help
-
-- **GitHub Issues**: [pulse8-ai/pulse8-ai-chat/issues](https://github.com/pulse8-ai/pulse8-ai-chat/issues)
-- **Documentation**: Check the README and JSDoc comments
-- **Examples**: See the Storybook examples (`npm run storybook`)
 
 ## Requirements
 
