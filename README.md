@@ -34,34 +34,17 @@ npm install react react-dom
 import '@pulse8-ai/chat/styles.css'
 ```
 
-## Quick Start
+### Basic Usage (New Simplified API)
 
-### Basic Usage (with Pre-built Adapters)
-
-The easiest way to get started is using the pre-built adapters:
+The easiest way to get started is using the `streamConfig` option:
 
 ```tsx
-import { ChatPanel, useChatMessages, streamSSE, createOpenAIAdapter } from '@pulse8-ai/chat'
+import { ChatPanel, useChatMessages, openAIStreamConfig } from '@pulse8-ai/chat'
 import '@pulse8-ai/chat/styles.css'
 
 function ChatPage() {
   const { messages, isStreaming, sendMessage, stopStreaming } = useChatMessages({
-    sendMessageToApi: async (params) => {
-      await streamSSE({
-        url: 'https://api.openai.com/v1/chat/completions',
-        headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
-        body: {
-          model: 'gpt-4',
-          messages: [{ role: 'user', content: params.userInput }],
-          stream: true,
-        },
-        adapter: createOpenAIAdapter(),
-        onEvent: params.onEvent,
-        onComplete: params.onComplete,
-        onError: params.onError,
-        signal: params.abortSignal,
-      })
-    },
+    streamConfig: openAIStreamConfig({ apiKey: OPENAI_API_KEY })
   })
 
   return (
@@ -78,28 +61,56 @@ function ChatPage() {
 }
 ```
 
+### Custom Usage (With `sendMessageToApi`)
+
+If you need full control over the API call, use `sendMessageToApi`:
+
+```tsx
+const { messages, sendMessage } = useChatMessages({
+  sendMessageToApi: async (params) => {
+    await streamSSE({
+      url: '/api/chat',
+      body: { message: params.userInput },
+      adapter: createOpenAIAdapter(),
+      onEvent: params.onEvent,
+      onComplete: params.onComplete,
+      onError: params.onError,
+      signal: params.abortSignal,
+    })
+  },
+})
+```
+
 ### Simple Message Appending (Without Streaming)
 
-For simpler use cases where you don't need streaming, use the `appendMessage` functions:
+When you don't need streaming—e.g. your API returns the full response at once—use the append helpers and skip `streamSSE`:
+
+1. Pass a no-op `sendMessageToApi` (required by the hook but not used).
+2. On send: add the user message, call your API, then add the assistant reply.
 
 ```tsx
 const { appendUserMessage, appendAssistantMessage } = useChatMessages({
-  sendMessageToApi: async () => {}, // Required but not used
+  sendMessageToApi: async () => {}, // no-op when you only append
 })
 
-// Add messages from your own API response
+// Simple flow: user message → API call → assistant message
 const handleSend = async (question: string) => {
   appendUserMessage(question)
-  
+
   const response = await fetch('/my-api', {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ question }),
   })
   const data = await response.json()
-  
+
   appendAssistantMessage(data.answer)
 }
 ```
+
+- **`appendUserMessage(content)`** – add a user message (optional second arg: `attachedFiles`).
+- **`appendAssistantMessage(content)`** – add an assistant message.
+- **`appendMessage({ role, content, ... })`** – full control (id/timestamp are optional; they are generated if omitted).
 
 ### With Anthropic Claude
 
@@ -175,20 +186,23 @@ import { streamSSE } from '@pulse8-ai/chat/utils'
 
 ### streamSSE
 
-The main utility for connecting to streaming AI APIs:
+**How you use it:** You only use `streamSSE` inside your `sendMessageToApi` callback. When the user sends a message, the hook calls `sendMessageToApi(params)`. You call `streamSSE` with your API settings (url, body, headers, adapter) and **forward the hook’s callbacks and signal** from `params`. The hook then updates the UI as each chunk arrives. You never call `streamSSE` from the UI directly.
+
+**Pattern:** In `sendMessageToApi`, `await streamSSE({ ...your API config..., onEvent: params.onEvent, onComplete: params.onComplete, onError: params.onError, signal: params.abortSignal })`.
 
 ```tsx
 import { streamSSE } from '@pulse8-ai/chat'
 
+// Inside useChatMessages({ sendMessageToApi: async (params) => { ... } })
 await streamSSE({
   url: '/api/chat',
-  body: { message: 'Hello' },
+  body: { message: params.userInput },
   headers: { Authorization: 'Bearer ...' },
-  adapter: myAdapter,
-  onEvent: (event) => console.log(event),
-  onComplete: () => console.log('Done!'),
-  onError: (error) => console.error(error),
-  signal: abortController.signal,
+  adapter: createOpenAIAdapter(),
+  onEvent: params.onEvent,
+  onComplete: params.onComplete,
+  onError: params.onError,
+  signal: params.abortSignal,
 })
 ```
 
