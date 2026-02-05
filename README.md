@@ -81,36 +81,36 @@ const { messages, sendMessage } = useChatMessages({
 })
 ```
 
-### Simple Message Appending (Without Streaming)
+### Simple Message Appending (Custom Logic)
 
-When you don't need streaming—e.g. your API returns the full response at once—use the append helpers and skip `streamSSE`:
-
-1. Pass a no-op `sendMessageToApi` (required by the hook but not used).
-2. On send: add the user message, call your API, then add the assistant reply.
+If you don't need streaming (e.g. your API returns the full response at once) or if you want to implement custom message flows, use the append helpers. This is often the **easiest way** to integrate with existing REST APIs.
 
 ```tsx
 const { appendUserMessage, appendAssistantMessage } = useChatMessages({
   sendMessageToApi: async () => {}, // no-op when you only append
 })
 
-// Simple flow: user message → API call → assistant message
 const handleSend = async (question: string) => {
+  // 1. Add the user message to UI immediately
   appendUserMessage(question)
 
-  const response = await fetch('/my-api', {
+  // 2. Call your API
+  const response = await fetch('/api/chat', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ question }),
   })
   const data = await response.json()
 
+  // 3. Add the assistant response to UI
   appendAssistantMessage(data.answer)
 }
 ```
 
-- **`appendUserMessage(content)`** – add a user message (optional second arg: `attachedFiles`).
-- **`appendAssistantMessage(content)`** – add an assistant message.
-- **`appendMessage({ role, content, ... })`** – full control (id/timestamp are optional; they are generated if omitted).
+- **`appendUserMessage(content)`** – add a user message.
+- **`appendAssistantMessage(content)`** – add an assistant message (includes fade-in animation).
+- **`appendMessage({ role, content, ... })`** – full control over ID, timestamp, etc.
+
+---
 
 ### With Anthropic Claude
 
