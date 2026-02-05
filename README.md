@@ -63,7 +63,7 @@ function ChatPage() {
 
 ### Custom Usage (With `sendMessageToApi`)
 
-If you need full control over the API call, use `sendMessageToApi`:
+If you need full control over the API call (e.g. custom headers, complex body transformation), use `sendMessageToApi`. For detailed provider examples, see [Advanced Streaming](docs/STREAMING.md).
 
 ```tsx
 const { messages, sendMessage } = useChatMessages({
@@ -80,7 +80,6 @@ const { messages, sendMessage } = useChatMessages({
   },
 })
 ```
-
 ### Simple Message Appending (Custom Logic)
 
 If you don't need streaming (e.g. your API returns the full response at once) or if you want to implement custom message flows, use the append helpers. This is often the **easiest way** to integrate with existing REST APIs.
@@ -110,59 +109,6 @@ const handleSend = async (question: string) => {
 - **`appendAssistantMessage(content)`** – add an assistant message (includes fade-in animation).
 - **`appendMessage({ role, content, ... })`** – full control over ID, timestamp, etc.
 
----
-
-### With Anthropic Claude
-
-```tsx
-import { streamSSE, createAnthropicAdapter } from '@pulse8-ai/chat'
-
-const { messages, sendMessage } = useChatMessages({
-  sendMessageToApi: async (params) => {
-    await streamSSE({
-      url: 'https://api.anthropic.com/v1/messages',
-      headers: {
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: {
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 1024,
-        messages: [{ role: 'user', content: params.userInput }],
-        stream: true,
-      },
-      adapter: createAnthropicAdapter(),
-      onEvent: params.onEvent,
-      onComplete: params.onComplete,
-      onError: params.onError,
-      signal: params.abortSignal,
-    })
-  },
-})
-```
-
-### With Google Gemini
-
-```tsx
-import { streamSSE, createGeminiAdapter } from '@pulse8-ai/chat'
-
-const { messages, sendMessage } = useChatMessages({
-  sendMessageToApi: async (params) => {
-    await streamSSE({
-      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:streamGenerateContent?key=${GEMINI_API_KEY}`,
-      body: {
-        contents: [{ parts: [{ text: params.userInput }] }],
-      },
-      adapter: createGeminiAdapter(),
-      onEvent: params.onEvent,
-      onComplete: params.onComplete,
-      onError: params.onError,
-      signal: params.abortSignal,
-    })
-  },
-})
-```
-
 ## Pre-built Adapters
 
 The library ships with adapters for major AI providers:
@@ -184,49 +130,11 @@ import { streamSSE } from '@pulse8-ai/chat/utils'
 
 ## Streaming Utilities
 
-### streamSSE
+For advanced custom streaming implementations using SSE, see [Advanced Streaming](docs/STREAMING.md).
 
-**How you use it:** You only use `streamSSE` inside your `sendMessageToApi` callback. When the user sends a message, the hook calls `sendMessageToApi(params)`. You call `streamSSE` with your API settings (url, body, headers, adapter) and **forward the hook’s callbacks and signal** from `params`. The hook then updates the UI as each chunk arrives. You never call `streamSSE` from the UI directly.
-
-**Pattern:** In `sendMessageToApi`, `await streamSSE({ ...your API config..., onEvent: params.onEvent, onComplete: params.onComplete, onError: params.onError, signal: params.abortSignal })`.
-
-```tsx
-import { streamSSE } from '@pulse8-ai/chat'
-
-// Inside useChatMessages({ sendMessageToApi: async (params) => { ... } })
-await streamSSE({
-  url: '/api/chat',
-  body: { message: params.userInput },
-  headers: { Authorization: 'Bearer ...' },
-  adapter: createOpenAIAdapter(),
-  onEvent: params.onEvent,
-  onComplete: params.onComplete,
-  onError: params.onError,
-  signal: params.abortSignal,
-})
-```
-
-### Lower-level Utilities
-
-For custom streaming implementations:
-
-```tsx
-import { parseSSELine, createSSEParser } from '@pulse8-ai/chat'
-
-// Parse a single SSE line
-const data = parseSSELine('data: {"content": "hello"}')
-
-// Create a stateful parser for chunked data
-const parser = createSSEParser({
-  onData: (data) => {
-    const event = myAdapter(data)
-    if (event) handleEvent(event)
-  },
-})
-
-parser.feed(chunk1)
-parser.feed(chunk2)
-```
+- `streamSSE` - Main utility for SSE connections
+- `parseSSELine` - Low-level line parser
+- `createSSEParser` - Stateful parser for chunked data
 
 ## Configuration
 
@@ -395,6 +303,7 @@ import { ErrorBoundary, MessageErrorBoundary } from '@pulse8-ai/chat'
 
 For detailed guides, see:
 
+- [Advanced Streaming](docs/STREAMING.md) - Manual provider integration and lower-level utilities
 - [Custom Adapters](docs/ADAPTERS.md) - Create adapters for custom backends
 - [Theming](docs/THEMING.md) - Customize colors and appearance
 - [Custom Tool Renderers](docs/TOOL_RENDERERS.md) - Build chart, table, and other renderers
