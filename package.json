@@ -1,6 +1,6 @@
 {
   "name": "@pulse8-ai/chat",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A pluggable, customizable chat UI component package for React applications. Supports streaming, custom tool renderers, and any AI backend.",
   "type": "module",
   "main": "./dist/index.js",
