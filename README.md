@@ -63,7 +63,7 @@ function ChatPage() {
 
 ### Custom Usage (With `sendMessageToApi`)
 
-If you need full control over the API call (e.g. custom headers, complex body transformation), use `sendMessageToApi`. For detailed provider examples, see [Advanced Streaming](docs/STREAMING.md).
+If you need full control over the API call (e.g. custom headers, complex body transformation), use `sendMessageToApi`. For detailed provider examples, see [Advanced Streaming](https://github.com/synpulse8-opensource/pulse8-react-frontend-component-for-k8/blob/main/docs/STREAMING.md).
 
 ```tsx
 const { messages, sendMessage } = useChatMessages({
@@ -130,7 +130,7 @@ import { streamSSE } from '@pulse8-ai/chat/utils'
 
 ## Streaming Utilities
 
-For advanced custom streaming implementations using SSE, see [Advanced Streaming](docs/STREAMING.md).
+For advanced custom streaming implementations using SSE, see [Advanced Streaming](https://github.com/synpulse8-opensource/pulse8-react-frontend-component-for-k8/blob/main/docs/STREAMING.md).
 
 - `streamSSE` - Main utility for SSE connections
 - `parseSSELine` - Low-level line parser
@@ -303,14 +303,14 @@ import { ErrorBoundary, MessageErrorBoundary } from '@pulse8-ai/chat'
 
 For detailed guides, see:
 
-- [Advanced Streaming](docs/STREAMING.md) - Manual provider integration and lower-level utilities
-- [Custom Adapters](docs/ADAPTERS.md) - Create adapters for custom backends
-- [Theming](docs/THEMING.md) - Customize colors and appearance
-- [Custom Tool Renderers](docs/TOOL_RENDERERS.md) - Build chart, table, and other renderers
-- [Migration Guide](docs/MIGRATION.md) - Upgrade from v0.1.x to v0.2.0
-- [Security](docs/SECURITY.md) - Security best practices
-- [Accessibility](docs/ACCESSIBILITY.md) - Accessibility features and testing
-- [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues and solutions
+- [Advanced Streaming](https://github.com/synpulse8-opensource/pulse8-react-frontend-component-for-k8/blob/main/docs/STREAMING.md) - Manual provider integration and lower-level utilities
+- [Custom Adapters](https://github.com/synpulse8-opensource/pulse8-react-frontend-component-for-k8/blob/main/docs/ADAPTERS.md) - Create adapters for custom backends
+- [Theming](https://github.com/synpulse8-opensource/pulse8-react-frontend-component-for-k8/blob/main/docs/THEMING.md) - Customize colors and appearance
+- [Custom Tool Renderers](https://github.com/synpulse8-opensource/pulse8-react-frontend-component-for-k8/blob/main/docs/TOOL_RENDERERS.md) - Build chart, table, and other renderers
+- [Migration Guide](https://github.com/synpulse8-opensource/pulse8-react-frontend-component-for-k8/blob/main/docs/MIGRATION.md) - Upgrade from v0.1.x to v0.2.0
+- [Security](https://github.com/synpulse8-opensource/pulse8-react-frontend-component-for-k8/blob/main/docs/SECURITY.md) - Security best practices
+- [Accessibility](https://github.com/synpulse8-opensource/pulse8-react-frontend-component-for-k8/blob/main/docs/ACCESSIBILITY.md) - Accessibility features and testing
+- [Troubleshooting](https://github.com/synpulse8-opensource/pulse8-react-frontend-component-for-k8/blob/main/docs/TROUBLESHOOTING.md) - Common issues and solutions
 
 ## Development
 
@@ -352,8 +352,8 @@ npm run storybook
 
 ## License
 
-MIT - see [LICENSE](LICENSE) for details.
+MIT - see [LICENSE](https://github.com/synpulse8-opensource/pulse8-react-frontend-component-for-k8/blob/main/LICENSE) for details.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
+See [CONTRIBUTING.md](https://github.com/synpulse8-opensource/pulse8-react-frontend-component-for-k8/blob/main/CONTRIBUTING.md) for contribution guidelines.

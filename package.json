@@ -1,6 +1,6 @@
 {
   "name": "@pulse8-ai/chat",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "A pluggable, customizable chat UI component package for React applications. Supports streaming, custom tool renderers, and any AI backend.",
   "type": "module",
   "main": "./dist/index.js",
@@ -75,12 +75,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pulse8-ai/pulse8-ai-chat.git"
+    "url": "git+https://github.com/synpulse8-opensource/pulse8-react-frontend-component-for-k8.git"
   },
   "bugs": {
-    "url": "https://github.com/pulse8-ai/pulse8-ai-chat/issues"
+    "url": "https://github.com/synpulse8-opensource/pulse8-react-frontend-component-for-k8/issues"
   },
-  "homepage": "https://github.com/pulse8-ai/pulse8-ai-chat#readme",
+  "homepage": "https://github.com/synpulse8-opensource/pulse8-react-frontend-component-for-k8#readme",
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "clsx": "^2.1.1",
